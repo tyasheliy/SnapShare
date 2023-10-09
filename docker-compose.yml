@@ -1,0 +1,29 @@
+version: "3.8"
+
+services:
+
+  snapshare-identity-pg:
+    image: postgres:alpine3.18
+    ports:
+      - "5001:5001"
+    environment:
+      POSTGRES_USER: shef
+      POSTGRES_PASSWORD: snapshare
+      POSTGRES_DB: SnapShare
+      PGPORT: 5001
+    restart: always
+  
+  snapshare-identity-redis:
+    image: redis:alpine3.18
+    ports: 
+      - "5002:5002"
+    command:
+      redis-server --port 5002 --requirepass snapshare
+    restart: always
+
+  snapshare-identity-service:
+    build: ./IdentityService
+    ports:
+      - "5000:5000"
+      - "5010:5010"
+    restart: on-failure
