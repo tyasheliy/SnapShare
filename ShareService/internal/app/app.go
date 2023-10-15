@@ -1,0 +1,163 @@
+package app
+
+import (
+	"LinkService/config"
+	"LinkService/internal/cache"
+	"LinkService/internal/exptype"
+	"LinkService/internal/logger"
+	"LinkService/internal/models"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+	"os"
+	"strings"
+
+	"github.com/golang-jwt/jwt/v4"
+	echojwt "github.com/labstack/echo-jwt"
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
+)
+
+const (
+	baseUrl = "/share"
+)
+
+type App struct {
+	cfg    *config.Config
+	logger *logger.Logger
+	cache  *cache.Cache
+	e      *echo.Echo
+}
+
+func New(cfg *config.Config, cache *cache.Cache, logger *logger.Logger) (*App, error) {
+	e := echo.New()
+
+	//TODO: Work on logger.
+	e.Use(middleware.Logger())
+	e.Use(middleware.Recover())
+	e.Use(echojwt.WithConfig(echojwt.Config{
+		SigningKey:    cfg.SigningKey,
+		SigningMethod: echojwt.AlgorithmHS256,
+		Skipper: func(c echo.Context) bool {
+			return strings.Contains(c.Request().URL.Path, baseUrl) && c.Request().Method == http.MethodGet
+		},
+	}))
+
+	return &App{
+		cfg:    cfg,
+		logger: logger,
+		e:      e,
+		cache:  cache,
+	}, nil
+}
+
+func (a *App) createLink(c echo.Context) error {
+	user := c.Get("user").(*jwt.Token)
+	claims, ok := user.Claims.(jwt.MapClaims)
+	if !ok {
+		return echo.ErrBadRequest
+	}
+
+	if claims["userId"] == nil {
+		return echo.ErrBadRequest
+	}
+
+	userId := claims["userId"].(string)
+
+	header, err := c.FormFile("file")
+	if err != nil {
+		return err
+	}
+
+	password := c.FormValue("password")
+	expireType := c.FormValue("expireType")
+
+	link, err := models.NewLink(userId, header, exptype.ExpireType(expireType), password)
+	if err != nil {
+		return err
+	}
+
+	json, err := json.Marshal(link)
+	if err != nil {
+		return err
+	}
+
+	errCh := make(chan error)
+
+	go a.cache.Cache(link.ID, string(json), link.GetDuration(), errCh)
+
+	err = <-errCh
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, echo.Map{"id": link.ID})
+}
+
+func (a *App) consumeLink(c echo.Context) error {
+	errCh := make(chan error)
+	cacheCh := make(chan string)
+
+	go a.cache.Get(c.Param("id"), cacheCh, errCh)
+
+	err := <-errCh
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, echo.Map{"message": "Link is not found"})
+	}
+
+	var link models.Link
+	err = json.Unmarshal([]byte(<-cacheCh), &link)
+	if err != nil {
+		return err
+	}
+
+	if link.Password != "" {
+		body := c.Request().Body
+		defer body.Close()
+
+		bodyData, err := io.ReadAll(body)
+		if err != nil {
+			return err
+		}
+
+		if len(bodyData) == 0 {
+			return echo.ErrBadRequest
+		}
+
+		var bodyMap map[string]interface{}
+		err = json.Unmarshal(bodyData, &bodyMap)
+		if err != nil {
+			return err
+		}
+
+		if bodyMap["password"].(string) != link.Password {
+			return echo.ErrBadRequest
+		}
+	}
+
+	f, err := os.CreateTemp(os.TempDir(), link.FileName)
+	if err != nil {
+		return err
+	}
+	defer os.Remove(f.Name())
+	defer f.Close()
+
+	_, err = f.Write(link.FileData)
+	if err != nil {
+		return err
+	}
+
+	return c.Attachment(f.Name(), link.FileName)
+}
+
+func route(endpoint string) string {
+	return fmt.Sprintf("%s%s", baseUrl, endpoint)
+}
+
+func (a *App) Serve() {
+	a.e.GET(route("/:id"), a.consumeLink)
+	a.e.POST(route(""), a.createLink)
+	addr := fmt.Sprintf(":%s", a.cfg.Port)
+	a.e.Start(addr)
+}

@@ -1,0 +1,20 @@
+{
+    "app": {
+        "build": "test",
+        "port": "4000"
+    },
+    "authToken": {
+        "secretKey": "SBry4qOf5Wb2IPccn6w1aqQHy0IBnJB5",
+        "issuer": "SnapShareIdentityService",
+        "audience": "SnapShareUsers"
+    },
+    "conns": {
+        "cache": {
+            "addr": "host.docker.internal:4002",
+            "pass": "snapshare"
+        }
+    },
+    "serviceUrls": {
+        "identity": "http://host.docker.internal:5100/"
+    }
+}

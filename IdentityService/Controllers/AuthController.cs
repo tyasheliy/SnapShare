@@ -58,14 +58,14 @@ namespace IdentityService.Controllers
 
             List<Claim> claims = new List<Claim>
             {
-                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString())
+                new Claim("userId", user.Id.ToString())
             };
             var securityKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(_configuration.GetValue<string>("TokenSecretKey")));
 
             var token = new JwtSecurityToken(
                 issuer: _configuration.GetValue<string>("TokenIssuer"),
                 audience: _configuration.GetValue<string>("TokenAudience"),
-                signingCredentials: new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256Signature),
+                signingCredentials: new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256),
 
                 expires: DateTime.Now.AddMinutes(_configuration.GetValue<double>("TokenLifetime")),
                 claims: claims
