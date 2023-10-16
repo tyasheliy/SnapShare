@@ -3,11 +3,17 @@ package identifiers
 import (
 	"math/rand"
 	"strings"
+
+	"github.com/google/uuid"
 )
 
 const (
 	chars = "1234567890"
 )
+
+func GenerateUUID() string {
+	return uuid.New().String()
+}
 
 func GenerateLinkID() string {
 	var sb strings.Builder

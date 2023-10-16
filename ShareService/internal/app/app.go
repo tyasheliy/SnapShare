@@ -12,15 +12,12 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/golang-jwt/jwt/v4"
 	echojwt "github.com/labstack/echo-jwt"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
-)
-
-const (
-	baseUrl = "/share"
 )
 
 type App struct {
@@ -34,13 +31,21 @@ func New(cfg *config.Config, cache *cache.Cache, logger *logger.Logger) (*App, e
 	e := echo.New()
 
 	//TODO: Work on logger.
+	e.Use(middleware.CORS())
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 	e.Use(echojwt.WithConfig(echojwt.Config{
 		SigningKey:    cfg.SigningKey,
 		SigningMethod: echojwt.AlgorithmHS256,
 		Skipper: func(c echo.Context) bool {
-			return strings.Contains(c.Request().URL.Path, baseUrl) && c.Request().Method == http.MethodGet
+			allowUnauth := [...]string{fmt.Sprintf("/links/%s", c.Param("id")), "/entries"}
+			for _, v := range allowUnauth {
+				if strings.Contains(c.Request().URL.Path, v) {
+					return true
+				}
+			}
+
+			return false
 		},
 	}))
 
@@ -113,26 +118,32 @@ func (a *App) consumeLink(c echo.Context) error {
 	}
 
 	if link.Password != "" {
-		body := c.Request().Body
-		defer body.Close()
+		if c.QueryParam("entry") == "" {
+			return echo.NewHTTPError(http.StatusBadRequest, echo.Map{"message": "This link is password protected"})
+		}
 
-		bodyData, err := io.ReadAll(body)
+		go a.cache.Get(c.QueryParam("entry"), cacheCh, errCh)
+
+		err = <-errCh
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, echo.Map{"message": "Entry is not found"})
+		}
+
+		var entry models.Entry
+		err = json.Unmarshal([]byte(<-cacheCh), &entry)
 		if err != nil {
 			return err
 		}
 
-		if len(bodyData) == 0 {
-			return echo.ErrBadRequest
-		}
+		go a.cache.Delete(entry.ID, errCh)
 
-		var bodyMap map[string]interface{}
-		err = json.Unmarshal(bodyData, &bodyMap)
+		err = <-errCh
 		if err != nil {
-			return err
+			a.e.Logger.Error(err)
 		}
 
-		if bodyMap["password"].(string) != link.Password {
-			return echo.ErrBadRequest
+		if link.Password != entry.Password {
+			return echo.NewHTTPError(http.StatusBadRequest, echo.Map{"message": "Invalid password"})
 		}
 	}
 
@@ -151,13 +162,46 @@ func (a *App) consumeLink(c echo.Context) error {
 	return c.Attachment(f.Name(), link.FileName)
 }
 
-func route(endpoint string) string {
-	return fmt.Sprintf("%s%s", baseUrl, endpoint)
+func (a *App) createEntry(c echo.Context) error {
+	body := c.Request().Body
+	defer body.Close()
+
+	bodyData, err := io.ReadAll(body)
+	if err != nil {
+		return err
+	}
+
+	var bodyMap map[string]interface{}
+	err = json.Unmarshal(bodyData, &bodyMap)
+	if err != nil {
+		return err
+	}
+
+	if bodyMap["password"] == nil {
+		return echo.ErrBadRequest
+	}
+
+	entry := models.NewEntry(bodyMap["password"].(string))
+	json, err := json.Marshal(entry)
+	if err != nil {
+		return err
+	}
+	errCh := make(chan error)
+
+	go a.cache.Cache(entry.ID, string(json), time.Minute, errCh)
+
+	err = <-errCh
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, echo.Map{"id": entry.ID})
 }
 
 func (a *App) Serve() {
-	a.e.GET(route("/:id"), a.consumeLink)
-	a.e.POST(route(""), a.createLink)
+	a.e.GET("/links/:id", a.consumeLink)
+	a.e.POST("/links", a.createLink)
+	a.e.POST("/entries", a.createEntry)
 	addr := fmt.Sprintf(":%s", a.cfg.Port)
 	a.e.Start(addr)
 }

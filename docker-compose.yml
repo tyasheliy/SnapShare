@@ -47,13 +47,21 @@ services:
     depends_on:
       - share-redis
   
+  spa-client:
+    build: ./SPA
+    ports:
+      - "8080:8080"
+    restart: always
+
   gateway:
     image: nginx:alpine3.18
     volumes:
       - ./Gateway/nginx.conf:/etc/nginx/nginx.conf
+      - ./SPA/dist:/usr/share/nginx/html
     ports:
       - "80:80"
     restart: always
     depends_on:
       - identity-service
       - share-service
+      - spa-client
