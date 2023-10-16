@@ -1,14 +1,10 @@
-using IdentityService.Caches;
 using IdentityService.Caches.Handlers;
-using IdentityService.Caches.Interfaces;
 using IdentityService.Data;
 using IdentityService.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
-using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Text;
 
@@ -32,6 +28,13 @@ internal class Program
         var services = builder.Services;
 
         //adding services
+        services.AddCors(o =>
+        {
+            o.AddDefaultPolicy(p =>
+            {
+                p.AllowAnyMethod().AllowAnyOrigin();
+            });
+        });
         services.AddControllers();
         services.AddStackExchangeRedisCache(o =>
         {
