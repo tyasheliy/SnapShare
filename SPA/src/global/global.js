@@ -1,26 +1,14 @@
-import { createApp } from 'vue'
-import App from './App.vue'
-import router from './router'
-import './assets/tailwind.css'
-import axios from 'axios'
-
-axios.defaults.baseURL = "http://localhost/api/"
-
-createApp(App).use(router).mount('#app')
-
-
-
-//custom functions
-function checkAuth() {
+export const checkAuth = function(router) {
     if (localStorage.token === undefined) {
+        router.push({ name: "login" })
         let promise = new Promise((res, rej) => setTimeout(() => {
             res()
-        }, 200))
-        promise.then(() => redirectWithUnauthError())
+        }, 1))
+        promise.then(() => showUnauthLoginMessage())
     }
 }
 
-function redirectWithUnauthError() {
+function showUnauthLoginMessage() {
     console.log("Token has expired or unauthenticated")
 
     let messageContainer = document.querySelector("#messageContainer")
@@ -33,7 +21,5 @@ function redirectWithUnauthError() {
     messageContainer.classList.add("bg-error")
     messageContainer.classList.remove("opacity-0")
 
-    messageSpan.innerText = ""
-
-    this.$router.push({ name: "login" })
+    messageSpan.innerText = "Unauth"
 }

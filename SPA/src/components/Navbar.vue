@@ -16,7 +16,8 @@
             <router-link to="/" class="text-foreground hover:text-xl focus:text-accept hover:text-accent transition-all duration-150">Link</router-link>
         </div>
         <div class="mt-auto h-24 flex items-center justify-center m-16">
-            <router-link to="/" class="text-foreground hover:text-xl focus:text-accept hover:text-accent transition-all duration-150">Settings</router-link>
+            <router-link id="loginLink" to="/login" class="text-foreground hover:text-xl focus:text-accept hover:text-accent transition-all duration-150 whitespace-nowrap hidden">Log in</router-link>
+            <router-link id="profileLink" to="/profile" class="text-foreground hover:text-xl focus:text-accept hover:text-accent transition-all duration-150 whitespace-nowrap hidden">Profile</router-link>
         </div>
     </div>
 </nav>
@@ -33,6 +34,14 @@ export default {
     data() {
         return {
             menuOpened: false
+        }
+    },
+    mounted() {
+        if (localStorage.token !== undefined) {
+            document.querySelector("#profileLink").classList.remove("hidden")
+        }
+        else {
+            document.querySelector("#loginLink").classList.remove("hidden")
         }
     },
     methods: {

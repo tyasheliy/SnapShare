@@ -57,7 +57,7 @@ namespace IdentityService.Controllers
                 return BadRequest(new { Message = "Invalid token" });
             }
 
-            string id = jwt.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier).Value;
+            string id = jwt.Claims.FirstOrDefault(c => c.Type == "userId").Value;
             if (id.Equals(string.Empty) || id.Equals(null))
             {
                 return StatusCode(500, new { Message = "Invalid user identifier" });
