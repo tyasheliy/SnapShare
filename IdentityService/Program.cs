@@ -28,13 +28,7 @@ internal class Program
         var services = builder.Services;
 
         //adding services
-        services.AddCors(o =>
-        {
-            o.AddDefaultPolicy(p =>
-            {
-                p.AllowAnyMethod().AllowAnyOrigin();
-            });
-        });
+        services.AddCors();
         services.AddControllers();
         services.AddStackExchangeRedisCache(o =>
         {
@@ -85,6 +79,7 @@ internal class Program
         //using services
         app.UseAuthentication();
         app.UseRouting();
+        app.UseCors(b => b.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
         app.UseAuthorization();
         app.UseEndpoints(endpoints => endpoints.MapControllers());
         

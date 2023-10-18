@@ -1,0 +1,58 @@
+<template>
+<nav class="z-40">
+    <button @click="switchMenu()" class="block fixed top-0 right-0 lg:hidden bg-primary z-50 border-foreground border-2 rounded-md mt-7 mr-4">
+        <BurgerIcon/>
+    </button>
+    <div class="fixed top-0 right-0 w-32 scale-0 lg:scale-100 h-screen" @mouseenter="switchMenu()">
+
+    </div>
+    <div id="nav-collapse" @mouseleave="switchMenu()" class="fixed top-0 right-0 w-screen lg:w-32 flex flex-col h-screen bg-primary translate-x-full transition-all duration-300">
+        <div class="text-center flex items-center justify-center h-24">
+            <span class="font-inter text-foreground text-3xl">Logo</span>
+        </div>
+        <div class="h-1/2 flex flex-col justify-center items-center space-y-4">
+            <router-link to="/" class="text-foreground hover:text-xl focus:text-accept hover:text-accent transition-all duration-150">Link</router-link>
+            <router-link to="/" class="text-foreground hover:text-xl focus:text-accept hover:text-accent transition-all duration-150">Link</router-link>
+            <router-link to="/" class="text-foreground hover:text-xl focus:text-accept hover:text-accent transition-all duration-150">Link</router-link>
+        </div>
+        <div class="mt-auto h-24 flex items-center justify-center m-16">
+            <router-link to="/" class="text-foreground hover:text-xl focus:text-accept hover:text-accent transition-all duration-150">Settings</router-link>
+        </div>
+    </div>
+</nav>
+</template>
+
+<script>
+import BurgerIcon from '@/icons/BurgerIcon.vue';
+
+export default {
+    name: "Navbar",
+    components: {
+        BurgerIcon
+    },
+    data() {
+        return {
+            menuOpened: false
+        }
+    },
+    methods: {
+        switchMenu() {
+            let collapse = document.querySelector("#nav-collapse")
+            if (collapse === null) {
+                return
+            }
+
+            switch (this.menuOpened){
+                case false:
+                    collapse.classList.remove("translate-x-full")
+                    break
+                case true:
+                    collapse.classList.add("translate-x-full")
+                    break
+            }
+
+            this.menuOpened = !this.menuOpened
+        }
+    }
+}
+</script>

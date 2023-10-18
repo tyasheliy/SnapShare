@@ -1,9 +1,24 @@
 <template>
-  <Navbar />
-  <div class="h-screen bg-zinc-50 dark:bg-zinc-800">
-      <button @click="switchMode()">Switch display mode</button>
+  <div class="flex flex-col">
+    <Navbar ref="nav" />
+    <div class="frame h-screen bg-secondary flex flex-col items-center justify-center">
+      <div class="cont lg:w-1/2 w-full h-2/3 flex flex-col items-center">
+        <div class="flex items-center justify-center h-1/3">
+          <span class="text-foreground text-3xl">Logo</span>
+        </div>
+        <div class="text-center text-foreground flex flex-col justify-center space-y-2 w-2/3 h-1/3">
+          <span class="text-2xl font-semibold">Welcome to SnapShare!</span>
+          <p>
+            SnapShare makes your files accessable to anyone in the internet in a few clicks!
+          </p>
+        </div>
+        <div class="text-center text-foreground h-1/3 flex items-end">
+          <button id="getStartedButton" @click="getStarted()" class="m-14 rounded-xl p-3 border-2 border-foreground hover:bg-accent focus:bg-accept transition-all duration-150">Get started</button>
+        </div>
+        <Footer/>
+      </div>
+    </div>
   </div>
-  <Footer />
 </template>
 
 <script>
@@ -14,25 +29,18 @@ export default {
   name: "HomeView",
   components: {
     Navbar,
-    Footer
+    Footer,
   },
   methods: {
-    switchMode(){
-      if (localStorage.theme === ""){
-        localStorage.theme = "light"
-      }
-
-      switch (localStorage.theme) {
-        case "light":
-          localStorage.theme = "dark"
-          document.documentElement.classList.add("dark")
-          break
-        case "dark":
-          localStorage.theme = "light"
-          document.documentElement.classList.remove("dark")
-          break
-      }
+    getStarted(){
+      this.$refs.nav.switchMenu()
     }
   }
 }
 </script>
+
+<style scoped>
+#frame {
+  height: 100vh;
+}
+</style>
