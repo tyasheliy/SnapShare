@@ -8,10 +8,10 @@
     </div>
     <div id="nav-collapse" @mouseleave="switchMenu()" class="fixed top-0 right-0 w-screen lg:w-32 flex flex-col h-screen bg-primary translate-x-full transition-all duration-300">
         <div class="text-center flex items-center justify-center h-24">
-            <span class="font-inter text-foreground text-3xl">Logo</span>
+            <router-link to="/" class="font-inter text-foreground text-3xl">Logo</router-link>
         </div>
         <div class="h-1/2 flex flex-col justify-center items-center space-y-4">
-            <router-link to="/" class="text-foreground hover:text-xl focus:text-accept hover:text-accent transition-all duration-150">Link</router-link>
+            <router-link to="/share" class="text-foreground hover:text-xl focus:text-accept hover:text-accent transition-all duration-150">Share</router-link>
             <router-link to="/" class="text-foreground hover:text-xl focus:text-accept hover:text-accent transition-all duration-150">Link</router-link>
             <router-link to="/" class="text-foreground hover:text-xl focus:text-accept hover:text-accent transition-all duration-150">Link</router-link>
         </div>

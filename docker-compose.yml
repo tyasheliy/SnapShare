@@ -43,6 +43,8 @@ services:
     build: ./ShareService
     ports:
       - "4000:4000"
+    volumes: 
+      - ./ShareService/tmp:/tmp
     restart: always
     depends_on:
       - share-redis

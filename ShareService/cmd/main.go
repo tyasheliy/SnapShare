@@ -4,12 +4,11 @@ import (
 	"LinkService/config"
 	"LinkService/internal/app"
 	"LinkService/internal/cache"
+	"LinkService/internal/files"
 	"LinkService/internal/logger"
-	"os"
 )
 
 func main() {
-	defer os.Exit(1)
 	l := logger.NewLogger("[CMD]")
 	al := logger.NewLogger("[APP]")
 
@@ -17,6 +16,8 @@ func main() {
 	if err != nil {
 		l.Error(err)
 	}
+
+	files.InitFiles()
 
 	cache, err := cache.NewCache(cfg.Cache["addr"], cfg.Cache["pass"])
 	if err != nil {

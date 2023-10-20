@@ -8,6 +8,26 @@ export const checkAuth = function(router) {
     }
 }
 
+export const inputError = function(input) {
+    input.classList.forEach((c) => {
+        if (c.startsWith("border-") & c != "border-2") {
+            input.classList.remove(c)
+        }
+    })
+    input.classList.add("border-error")
+}
+
+export const clearInput = function(input) {
+    input.classList.forEach((c) => {
+        input.classList.forEach((c) => {
+            if (c.startsWith("border-") & c != "border-2") {
+                input.classList.remove(c)
+            }
+        })
+        input.classList.add("border-foreground")
+    })
+}
+
 function showUnauthLoginMessage() {
     console.log("Token has expired or unauthenticated")
 

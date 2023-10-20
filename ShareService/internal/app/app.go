@@ -4,13 +4,13 @@ import (
 	"LinkService/config"
 	"LinkService/internal/cache"
 	"LinkService/internal/exptype"
+	"LinkService/internal/files"
 	"LinkService/internal/logger"
 	"LinkService/internal/models"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 
@@ -80,7 +80,7 @@ func (a *App) createLink(c echo.Context) error {
 
 	link, err := models.NewLink(userId, header, exptype.ExpireType(expireType), password)
 	if err != nil {
-		return err
+		return echo.NewHTTPError(http.StatusBadRequest, echo.Map{"message": "Link with the given data already exists"})
 	}
 
 	json, err := json.Marshal(link)
@@ -147,19 +147,11 @@ func (a *App) consumeLink(c echo.Context) error {
 		}
 	}
 
-	f, err := os.CreateTemp(os.TempDir(), link.FileName)
-	if err != nil {
-		return err
-	}
-	defer os.Remove(f.Name())
-	defer f.Close()
-
-	_, err = f.Write(link.FileData)
-	if err != nil {
-		return err
+	if !files.FileExists(link.FileName) {
+		return echo.NewHTTPError(http.StatusBadRequest, echo.Map{"message": "File is not found"})
 	}
 
-	return c.Attachment(f.Name(), link.FileName)
+	return c.Attachment(fmt.Sprintf("%s%s", files.GetDir(), link.FileName), link.FileName)
 }
 
 func (a *App) createEntry(c echo.Context) error {
@@ -198,10 +190,18 @@ func (a *App) createEntry(c echo.Context) error {
 	return c.JSON(http.StatusOK, echo.Map{"id": entry.ID})
 }
 
+func (a *App) getExpireTypes(c echo.Context) error {
+	return c.JSON(http.StatusOK, exptype.GetTypes())
+}
+
 func (a *App) Serve() {
 	a.e.GET("/links/:id", a.consumeLink)
 	a.e.POST("/links", a.createLink)
+
 	a.e.POST("/entries", a.createEntry)
+
+	a.e.GET("/types", a.getExpireTypes)
+
 	addr := fmt.Sprintf(":%s", a.cfg.Port)
 	a.e.Start(addr)
 }

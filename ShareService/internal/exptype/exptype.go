@@ -1,6 +1,9 @@
 package exptype
 
-import "time"
+import (
+	"LinkService/internal/models/dto"
+	"time"
+)
 
 type ExpireType string
 
@@ -10,6 +13,24 @@ const (
 	Medium ExpireType = "Medium"
 	Long   ExpireType = "Long"
 )
+
+func (t ExpireType) getDTO() dto.ExpireTypeDTO {
+	return dto.ExpireTypeDTO{
+		Name:     string(t),
+		Duration: int(t.GetDuration().Minutes()),
+	}
+}
+
+func GetTypes() []dto.ExpireTypeDTO {
+	types := make([]dto.ExpireTypeDTO, 0, 4)
+
+	types = append(types, Snap.getDTO())
+	types = append(types, Short.getDTO())
+	types = append(types, Medium.getDTO())
+	types = append(types, Long.getDTO())
+
+	return types
+}
 
 func (t ExpireType) GetDuration() time.Duration {
 	switch t {
