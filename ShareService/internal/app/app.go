@@ -135,11 +135,13 @@ func (a *App) consumeLink(c echo.Context) error {
 			return err
 		}
 
-		go a.cache.Delete(entry.ID, errCh)
+		if c.Request().Method == http.MethodGet {
+			go a.cache.Delete(entry.ID, errCh)
 
-		err = <-errCh
-		if err != nil {
-			a.e.Logger.Error(err)
+			err = <-errCh
+			if err != nil {
+				a.e.Logger.Error(err)
+			}
 		}
 
 		if link.Password != entry.Password {
@@ -196,6 +198,8 @@ func (a *App) getExpireTypes(c echo.Context) error {
 
 func (a *App) Serve() {
 	a.e.GET("/links/:id", a.consumeLink)
+	a.e.HEAD("/links/:id", a.consumeLink)
+
 	a.e.POST("/links", a.createLink)
 
 	a.e.POST("/entries", a.createEntry)

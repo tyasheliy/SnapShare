@@ -1,18 +1,20 @@
 <template>
-<div class="frame h-screen bg-primary flex flex-col items-center justify-center text-foreground">
-    <div class="flex flex-col h-full">
-        <div class="h-1/3 flex items-center justify-center">
-            <span class="text-6xl font-bold">SnapShare</span>
-        </div>
-        <div ref="messageContainer" class="text-center rounded-sm m-4 p-2 transition-all duration-150 opacity-0">
-            <span ref="messageSpan">error message</span>
-        </div>
-        <div v-if="this.exists & this.secured" class="h-2/3 flex flex-col space-y-4">
-            <input ref="passwordInput" v-model="password" placeholder="Password" type="password" class="text-center p-2 border-2 text-foreground focus:text-primary border-foreground rounded-lg hover:border-accent bg-primary focus:bg-foreground transition-all duration-150"/>
-            <button @click="submit()" class="rounded-xl p-3 border-2 border-foreground hover:bg-accent focus:bg-accept transition-all duration-150">Send</button>
+    <div class="frame h-screen bg-primary flex flex-col items-center justify-center text-foreground">
+        <div class="flex flex-col h-full">
+            <div class="h-1/3 flex items-center justify-center">
+                <span class="text-6xl font-bold">SnapShare</span>
+            </div>
+            <div ref="messageContainer" class="text-center rounded-sm m-4 p-2 transition-all duration-150 opacity-0">
+                <span ref="messageSpan">error message</span>
+            </div>
+            <div v-if="this.secured" class="h-2/3 flex flex-col space-y-4">
+                <input ref="passwordInput" v-model="password" placeholder="Password" type="password"
+                    class="text-center p-2 border-2 text-foreground focus:text-primary border-foreground rounded-lg hover:border-accent bg-primary focus:bg-foreground transition-all duration-150" />
+                <button @click="submit()"
+                    class="rounded-xl p-3 border-2 border-foreground hover:bg-accent focus:bg-accept transition-all duration-150">Send</button>
+            </div>
         </div>
     </div>
-</div>
 </template>
 
 <script>
@@ -22,27 +24,34 @@ import { inputError, clearInput } from '@/global/global';
 export default {
     data() {
         return {
-            exists: true,
             secured: false
         }
     },
     created() {
-        axios.get(`share/links/${this.$route.params.id}`)
+        axios.head(`share/links/${this.$route.params.id}`)
             .then((response) => window.location.href = `${axios.defaults.baseURL}share/links/${this.$route.params.id}`)
             .catch((error) => {
-                let message = error.response.data.message
+                if (error.response) {
+                    if (error.response.status == 400) {
+                        axios.get(`share/links/${this.$route.params.id}`)
+                            .catch((error) => {
+                                if (!error.response) {
+                                    this.showErrorMessage("Unknown server error")
+                                    return
+                                }
 
-                if (message === undefined || message === null) {
+                                let message = error.response.data.message
+
+                                if (message.toLowerCase().includes("password")) {
+                                    this.secured = true
+                                }
+
+                                this.showErrorMessage(message)
+                            })
+                    }
+                }
+                else {
                     this.showErrorMessage("Unknown server error")
-                    return
-                }
-
-                if (message.toLowerCase().includes("not found")) {
-                    this.exists = false
-                }
-
-                if (message.toLowerCase().includes("password")) {
-                    this.secured = true
                 }
             })
     },
@@ -74,7 +83,35 @@ export default {
 
             axios.post("share/entries", data)
                 .then((response) => {
-                    window.location.href = `${axios.defaults.baseURL}share/links/${this.$route.params.id}?entry=${response.data.id}`
+                    let entryId = response.data.id
+                    axios.head(`share/links/${this.$route.params.id}?entry=${entryId}`)
+                        .then((response) => {
+                            window.location.href = `${axios.defaults.baseURL}share/links/${this.$route.params.id}?entry=${entryId}`
+                        })
+                        .catch((error) => {
+                            if (!error.response) {
+                                this.showErrorMessage("Unknown server error")
+                                return
+                            }
+                            if (error.response.status == 400) {
+                                axios.get(`share/links/${this.$route.params.id}?entry=${entryId}`)
+                                    .catch((error) => {
+                                        if (!error.response) {
+                                            this.showErrorMessage("Uknown server error")
+                                            return
+                                        }
+
+                                        let message = error.response.data.message
+
+                                        if (message.toLowerCase().includes("password")) {
+                                            inputError(this.$refs.passwordInput)
+                                        }
+
+                                        this.showErrorMessage(message)
+                                        return;
+                                    })
+                            }
+                        })
                 })
                 .catch((error) => {
                     if (error.response.data.message === undefined || error.response.data.message === null) {
@@ -82,7 +119,7 @@ export default {
                         return
                     }
 
-
+                    this.showErrorMessage(error.response.data.message)
                 })
         }
     }

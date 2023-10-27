@@ -8,7 +8,7 @@
             <div ref="messageContainer" class="text-foreground text-center w-1/2 m-4 opacity-0 p-2 rounded-sm transition-all duration-150">
                 <span ref="messageSpan">error message</span>
             </div>
-            <form @submit.prevent="submit()" class="h-2/3 text-foreground w-2/4">
+            <form @submit.prevent="submit()" class="h-2/3 text-foreground w-2/4" v-if="!this.processing">
                 <div class="h-2/3 flex flex-col space-y-4">
                     <input ref="fileInput" class="border-2 rounded-md border-foreground transition-all duration-150" type="file" />
                     <div class="flex lg:flex-row flex-col lg:space-y-0 lg:space-x-2 space-y-2">
@@ -32,6 +32,12 @@
                         type="submit">Share</button>
                 </div>
             </form>
+
+            <div class="h-2/3 text-foreground w-full flex justify-center" v-if="this.processing">
+                <div class="h-1/2 w-1/2">
+                    <Loader/>
+                </div>
+            </div>
             <Footer/>
         </div>
     </div>
@@ -40,17 +46,20 @@
 <script>
 import Navbar from '@/components/Navbar.vue';
 import Footer from '@/components/Footer.vue';
+import Loader from '@/components/Loader.vue';
 import { checkAuth, inputError, clearInput } from '@/global/global';
 import axios from 'axios';
 
 export default {
     components: {
         Navbar,
-        Footer
+        Footer,
+        Loader
     },
     data() {
         return {
-            expireTypes: []
+            expireTypes: [],
+            processing: false
         }
     },
     created() {
@@ -138,6 +147,8 @@ export default {
                 this.password = ""
             }
 
+            this.processing = true
+
             let formData = new FormData()
             formData.append("file", file.files[0])
             formData.append("expireType", expireType.value)
@@ -152,33 +163,45 @@ export default {
 
             axios.post("share/links", data.formData, {headers: data.headers})
                 .then((response) => {
+                    this.processing = false
+
                     let link = `${location.origin}/get/${response.data.id}`
                     let message = `Your file is successfuly shared! Link to the file: `
 
                     this.showAcceptedMessage(message, link)
                 })
                 .catch((error) => {
-                    if (error.response.status != undefined & error.response.status === 401) {
-                        localStorage.removeItem("token")
-                        checkAuth(this.$router)
+                    this.processing = false
+
+                    if (error.response) {
+                        if (error.response.status != undefined & error.response.status === 401) {
+                            localStorage.removeItem("token")
+                            checkAuth(this.$router)
+                        }
+
+                        let message = error.response.data.message
+
+                        if (message.toLowerCase().includes("password")) {
+                            inputError(password)
+                        }
+
+                        if (message.toLowerCase().includes("file")) {
+                            inputError(file)
+                        }
+
+                        if (message.toLowerCase().includes("type")) {
+                            inputError(expireType)
+                        }
+
+                        this.showErrorMessage(message)
                     }
-
-                    let message = error.response.data.message
-
-                    if (message.toLowerCase().includes("password")) {
-                        inputError(password)
+                    else {
+                        this.showErrorMessage("Unknown server error")
+                        console.log(error.message)
                     }
-
-                    if (message.toLowerCase().includes("file")) {
-                        inputError(file)
-                    }
-
-                    if (message.toLowerCase().includes("type")) {
-                        inputError(expireType)
-                    }
-
-                    this.showErrorMessage(message)
                 })
+            
+            //this.processing = false
         }
     }
 }
