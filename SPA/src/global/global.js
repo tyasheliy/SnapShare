@@ -41,5 +41,5 @@ function showUnauthLoginMessage() {
     messageContainer.classList.add("bg-error")
     messageContainer.classList.remove("opacity-0")
 
-    messageSpan.innerText = "Unauth"
+    messageSpan.innerText = "You are unauthenticated or your session has expired"
 }

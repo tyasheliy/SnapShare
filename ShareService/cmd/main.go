@@ -4,29 +4,29 @@ import (
 	"LinkService/config"
 	"LinkService/internal/app"
 	"LinkService/internal/cache"
-	"LinkService/internal/files"
-	"LinkService/internal/logger"
+	"LinkService/internal/controllers"
+	"os"
 )
 
 func main() {
-	l := logger.NewLogger("[CMD]")
-	al := logger.NewLogger("[APP]")
-
 	cfg, err := config.InitConfig()
 	if err != nil {
-		l.Error(err)
+		panic(err)
 	}
 
-	files.InitFiles()
+	os.Mkdir("../tmp", 0755)
 
-	cache, err := cache.NewCache(cfg.Cache["addr"], cfg.Cache["pass"])
+	redis, err := cache.NewRedisCache(cfg.Cache["addr"], cfg.Cache["pass"])
 	if err != nil {
-		l.Error(err)
+		panic(err)
 	}
 
-	app, err := app.New(cfg, cache, al)
+	links := controllers.NewLinkController(redis)
+	entries := controllers.NewEntryController(redis)
+
+	app, err := app.New(cfg, links, entries)
 	if err != nil {
-		l.Error(err)
+		panic(err)
 	}
 
 	app.Serve()

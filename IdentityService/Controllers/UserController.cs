@@ -1,17 +1,12 @@
 ﻿using IdentityService.Caches;
 using IdentityService.Caches.Handlers;
-using IdentityService.Caches.Statuses;
-using IdentityService.Data;
 using IdentityService.DTO;
 using IdentityService.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Distributed;
 using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text.Json;
+using System.Net.Mail;
 
 namespace IdentityService.Controllers
 {
@@ -99,6 +94,11 @@ namespace IdentityService.Controllers
         [HttpPost]
         public async Task<IActionResult> Post([FromBody] UserRegistrationDTO userData)
         {
+            if (!MailAddress.TryCreate(userData.Email, out _))
+            {
+                return BadRequest(new { Message = "Given email is invalid" });
+            }
+
             User user = new User
             {
                 Email = userData.Email,

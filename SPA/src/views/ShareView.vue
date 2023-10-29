@@ -5,12 +5,14 @@
             <div class="h-1/3 flex items-center justify-center text-foreground">
                 <span class="text-3xl font-bold">Share</span>
             </div>
-            <div ref="messageContainer" class="text-foreground text-center w-1/2 m-4 opacity-0 p-2 rounded-sm transition-all duration-150">
+            <div ref="messageContainer"
+                class="text-foreground text-center w-1/2 m-4 opacity-0 p-2 rounded-sm transition-all duration-150">
                 <span ref="messageSpan">error message</span>
             </div>
             <form @submit.prevent="submit()" class="h-2/3 text-foreground w-2/4" v-if="!this.processing">
                 <div class="h-2/3 flex flex-col space-y-4">
-                    <input ref="fileInput" class="border-2 rounded-md border-foreground transition-all duration-150" type="file" />
+                    <input ref="fileInput" class="border-2 rounded-md border-foreground transition-all duration-150"
+                        type="file" />
                     <div class="flex lg:flex-row flex-col lg:space-y-0 lg:space-x-2 space-y-2">
                         <div class="flex lg:w-1/2 h-1/2 flex-col">
                             <select ref="expireTypeInput"
@@ -35,10 +37,10 @@
 
             <div class="h-2/3 text-foreground w-full flex justify-center" v-if="this.processing">
                 <div class="h-1/2 w-1/2">
-                    <Loader/>
+                    <Loader />
                 </div>
             </div>
-            <Footer/>
+            <Footer />
         </div>
     </div>
 </template>
@@ -120,6 +122,21 @@ export default {
             clearInput(this.$refs.expireTypeInput)
             clearInput(this.$refs.passwordInput)
         },
+        async sendChunk(linkId, number, chunk) {
+            let auth = { "Authorization": `Bearer ${localStorage.token}` }
+
+            let formData = new FormData()
+            formData.append("data", chunk)
+            formData.append("number", number)
+
+            try {
+                await axios.put(`share/links/${linkId}`, formData, { headers: auth })
+            }
+            catch {
+                return false
+            }
+            return true
+        },
         submit() {
             this.clearForm()
 
@@ -149,26 +166,84 @@ export default {
 
             this.processing = true
 
-            let formData = new FormData()
-            formData.append("file", file.files[0])
-            formData.append("expireType", expireType.value)
-            formData.append("password", this.password)
-
             let data = {
                 headers: {
                     "Authorization": `Bearer ${localStorage.token}`
                 },
-                formData
+                body: {
+                    "fileName": file.files[0].name,
+                    "size": file.files[0].size,
+                    "expireType": expireType.value,
+                    "password": this.password
+                }
             }
 
-            axios.post("share/links", data.formData, {headers: data.headers})
-                .then((response) => {
+            axios.post("share/links", data.body, { headers: data.headers })
+                .then(async (response) => {
+                    let auth = { "Authorization": `Bearer ${localStorage.token}` }
+
+                    var link = `${location.origin}/get/${response.data.id}`
+
+                    if (file.files[0].size < 5 * 1024 * 1024) {
+                        let formData = new FormData()
+                        formData.append("file", file.files[0])
+
+                        axios.post(`share/links/${response.data.id}`, formData, { headers: auth })
+                            .then(() => {
+                                this.processing = false
+                                this.showAcceptedMessage("Your file has been successfully shared! It can be found at ", link)
+                            })
+                            .catch((error) => {
+                                if (error.response) {
+                                    inputError(this.$refs.fileInput)
+                                    this.showErrorMessage(error.response.data.message)
+                                }
+                                else {
+                                    console.log(error)
+                                    this.showErrorMessage("Unknown server error")
+                                }
+                            })
+                        return
+                    }
+
+                    let f = file.files[0]
+
+                    let chunks = []
+                    let iteration = 0
+                    let errorChunks = []
+
+                    for (let i = 0; i < (f.size / 1000000); i++) {
+                        chunks[i] = f.slice(i * 1000000, (i + 1) * 1000000)
+                    }
+
+                    for (let i = 0; i < chunks.length; i++) {
+                        let status = await this.sendChunk(response.data.id, i, chunks[i])
+
+                        if (!status) {
+                            errorChunks.push(i)
+                        }
+                    }
+
+                    while (errorChunks.length > 0) {
+                        if (iteration >= 10) {
+                            this.processing = false
+                            this.showErrorMessage("Failed to upload file")
+                            return
+                        }
+
+                        for (let i = errorChunks.length - 1; i > 0; i--) {
+                            let status = await this.sendChunk(response.data.id, errorChunks[i], chuks[errorChunks[i]])
+
+                            if (status) {
+                                errorChunks.pop()
+                            }
+                        }
+
+                        iteration++
+                    }
+
                     this.processing = false
-
-                    let link = `${location.origin}/get/${response.data.id}`
-                    let message = `Your file is successfuly shared! Link to the file: `
-
-                    this.showAcceptedMessage(message, link)
+                    this.showAcceptedMessage("Your file has been successfully shared! It can be found at ", link)
                 })
                 .catch((error) => {
                     this.processing = false
@@ -197,11 +272,9 @@ export default {
                     }
                     else {
                         this.showErrorMessage("Unknown server error")
-                        console.log(error.message)
+                        console.log(error)
                     }
                 })
-            
-            //this.processing = false
         }
     }
 }

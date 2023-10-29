@@ -7,11 +7,17 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-type Cache struct {
+type redisCache struct {
 	client *redis.Client
 }
 
-func NewCache(address string, password string) (*Cache, error) {
+type Cache interface {
+	Get(key string, dataChan chan<- string, errCh chan<- error)
+	Cache(key string, value string, dur time.Duration, errCh chan<- error)
+	Delete(key string, errCh chan<- error)
+}
+
+func NewRedisCache(address string, password string) (*redisCache, error) {
 	c := redis.NewClient(&redis.Options{
 		Addr:     address,
 		Password: password,
@@ -22,12 +28,12 @@ func NewCache(address string, password string) (*Cache, error) {
 		return nil, err
 	}
 
-	return &Cache{
+	return &redisCache{
 		client: c,
 	}, nil
 }
 
-func (c *Cache) Get(key string, cacheCh chan<- string, errCh chan<- error) {
+func (c *redisCache) Get(key string, dataCh chan<- string, errCh chan<- error) {
 	res, err := c.client.Get(context.Background(), key).Result()
 	if err != nil {
 		errCh <- err
@@ -35,10 +41,10 @@ func (c *Cache) Get(key string, cacheCh chan<- string, errCh chan<- error) {
 	}
 
 	errCh <- nil
-	cacheCh <- res
+	dataCh <- res
 }
 
-func (c *Cache) Cache(key string, value string, dur time.Duration, errCh chan<- error) {
+func (c *redisCache) Cache(key string, value string, dur time.Duration, errCh chan<- error) {
 	err := c.client.Set(context.Background(), key, value, dur).Err()
 	if err != nil {
 		errCh <- err
@@ -48,7 +54,7 @@ func (c *Cache) Cache(key string, value string, dur time.Duration, errCh chan<- 
 	errCh <- nil
 }
 
-func (c *Cache) Delete(key string, errCh chan<- error) {
+func (c *redisCache) Delete(key string, errCh chan<- error) {
 	err := c.client.Del(context.Background(), key).Err()
 	if err != nil {
 		errCh <- err
