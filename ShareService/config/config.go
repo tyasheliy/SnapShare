@@ -1,6 +1,10 @@
 package config
 
-import "github.com/spf13/viper"
+import (
+	"os"
+
+	"github.com/spf13/viper"
+)
 
 type AppConfig struct {
 	Build string
@@ -9,15 +13,17 @@ type AppConfig struct {
 
 type TokenConfig struct {
 	SigningKey []byte
-	Issuer     string
-	Audience   string
+}
+
+type CacheConfig struct {
+	Address  string
+	Password string
 }
 
 type Config struct {
 	AppConfig
 	TokenConfig
-	Cache       map[string]string
-	ServiceURLs map[string]string
+	CacheConfig
 }
 
 func InitConfig() (*Config, error) {
@@ -41,15 +47,17 @@ func InitConfig() (*Config, error) {
 	}
 
 	t := TokenConfig{
-		SigningKey: []byte(vp.GetString("authToken.secretKey")),
-		Issuer:     vp.GetString("authToken.issuer"),
-		Audience:   vp.GetString("authToken.audience"),
+		SigningKey: []byte(os.Getenv("TOKEN_SECRET_KEY")),
+	}
+
+	c := CacheConfig{
+		Address:  "host.docker.internal:4002",
+		Password: os.Getenv("SHARE_REDIS_PASSWORD"),
 	}
 
 	return &Config{
 		AppConfig:   app,
-		Cache:       vp.GetStringMapString("conns.cache"),
-		ServiceURLs: vp.GetStringMapString("serviceUrls"),
 		TokenConfig: t,
+		CacheConfig: c,
 	}, nil
 }

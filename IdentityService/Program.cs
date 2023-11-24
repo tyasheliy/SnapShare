@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using StackExchange.Redis;
 using System.Net.Sockets;
 using System.Text;
 
@@ -32,10 +33,10 @@ internal class Program
         services.AddControllers();
         services.AddStackExchangeRedisCache(o =>
         {
-            o.Configuration = builder.Configuration.GetConnectionString("Cache");
+            o.Configuration = $"host.docker.internal:5002, password={Environment.GetEnvironmentVariable("IDENTITY_REDIS_PASSWORD")}";
             o.InstanceName = "identity.";
         });
-        services.AddDbContext<DataContext>(o => o.UseNpgsql(builder.Configuration.GetConnectionString("Database")));
+        services.AddDbContext<DataContext>(o => o.UseNpgsql($"Server=host.docker.internal; Port=5001; Password={Environment.GetEnvironmentVariable("IDENTITY_PG_PASSWORD")}; Database={Environment.GetEnvironmentVariable("IDENTITY_PG_DB")}; Userid={Environment.GetEnvironmentVariable("IDENTITY_PG_USER")}"));
         services.AddIdentityCore<User>(o =>
         {
             //development
@@ -51,7 +52,7 @@ internal class Program
         })
             .AddEntityFrameworkStores<DataContext>()
             .AddSignInManager();
-        
+
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(o =>
             {
@@ -67,7 +68,7 @@ internal class Program
 
                     ValidAudience = builder.Configuration.GetValue<string>("TokenAudience"),
                     ValidIssuer = builder.Configuration.GetValue<string>("TokenIssuer"),
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(builder.Configuration.GetValue<string>("TokenSecretKey")))
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(Environment.GetEnvironmentVariable("TOKEN_SECRET_KEY")))
                 };
             });
         services.AddAuthorization();

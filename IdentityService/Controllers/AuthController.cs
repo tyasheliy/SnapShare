@@ -58,7 +58,7 @@ namespace IdentityService.Controllers
             {
                 new Claim("userId", user.Id.ToString())
             };
-            var securityKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(_configuration.GetValue<string>("TokenSecretKey")));
+            var securityKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(Environment.GetEnvironmentVariable("TOKEN_SECRET_KEY")));
 
             var token = new JwtSecurityToken(
                 issuer: _configuration.GetValue<string>("TokenIssuer"),

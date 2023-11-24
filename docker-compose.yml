@@ -6,9 +6,9 @@ services:
     ports:
       - "5001:5001"
     environment:
-      POSTGRES_USER: shef
-      POSTGRES_PASSWORD: snapshare
-      POSTGRES_DB: SnapShare
+      POSTGRES_USER: ${IDENTITY_PG_USER}
+      POSTGRES_PASSWORD: ${IDENTITY_PG_PASSWORD}
+      POSTGRES_DB: ${IDENTITY_PG_DB}
       PGPORT: 5001
     restart: always
   
@@ -17,7 +17,7 @@ services:
     ports: 
       - "5002:5002"
     command:
-      redis-server --port 5002 --requirepass snapshare
+      redis-server --port 5002 --requirepass ${IDENTITY_REDIS_PASSWORD}
     restart: always
 
   identity-service:
@@ -25,6 +25,12 @@ services:
     ports:
       - "5100:5100"
       - "5010:5010"
+    environment:
+      TOKEN_SECRET_KEY: ${TOKEN_SECRET_KEY}
+      IDENTITY_REDIS_PASSWORD: ${IDENTITY_REDIS_PASSWORD}
+      IDENTITY_PG_USER: ${IDENTITY_PG_USER}
+      IDENTITY_PG_PASSWORD: ${IDENTITY_PG_PASSWORD}
+      IDENTITY_PG_DB: ${IDENTITY_PG_DB}
     restart: always
     depends_on:
       - identity-pg
@@ -36,7 +42,7 @@ services:
     ports:
       - "4002:4002"
     command:
-      redis-server --port 4002 --requirepass snapshare
+      redis-server --port 4002 --requirepass ${SHARE_REDIS_PASSWORD}
     restart: always
 
   share-service:
@@ -45,6 +51,9 @@ services:
       - "4000:4000"
     volumes: 
       - ./ShareService/tmp:/tmp
+    environment:
+      TOKEN_SECRET_KEY: ${TOKEN_SECRET_KEY}
+      SHARE_REDIS_PASSWORD: ${SHARE_REDIS_PASSWORD}
     restart: always
     depends_on:
       - share-redis

@@ -16,7 +16,7 @@ func main() {
 
 	os.Mkdir("../tmp", 0755)
 
-	redis, err := cache.NewRedisCache(cfg.Cache["addr"], cfg.Cache["pass"])
+	redis, err := cache.NewRedisCache(cfg.CacheConfig.Address, cfg.CacheConfig.Password)
 	if err != nil {
 		panic(err)
 	}
