@@ -12,8 +12,7 @@
         </div>
         <div class="h-1/2 flex flex-col justify-center items-center space-y-4">
             <router-link to="/share" class="text-foreground hover:text-xl focus:text-accept hover:text-accent transition-all duration-150">Share</router-link>
-            <router-link to="/" class="text-foreground hover:text-xl focus:text-accept hover:text-accent transition-all duration-150">Link</router-link>
-            <router-link to="/" class="text-foreground hover:text-xl focus:text-accept hover:text-accent transition-all duration-150">Link</router-link>
+            <router-link to="/about" class="text-foreground hover:text-xl focus:text-accept hover:text-accent transition-all duration-150">About</router-link>
         </div>
         <div class="mt-auto h-24 flex items-center justify-center m-16">
             <router-link id="loginLink" to="/login" class="text-foreground hover:text-xl focus:text-accept hover:text-accent transition-all duration-150 whitespace-nowrap hidden">Log in</router-link>
