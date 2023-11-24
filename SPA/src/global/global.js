@@ -33,6 +33,7 @@ function showUnauthLoginMessage() {
 
     let messageContainer = document.querySelector("#messageContainer")
     let messageSpan = document.querySelector("#messageSpan")
+    let submitButton = document.querySelector("#submitButton")
 
     if (messageContainer === undefined || messageSpan === undefined) {
         return
@@ -40,6 +41,8 @@ function showUnauthLoginMessage() {
 
     messageContainer.classList.add("bg-error")
     messageContainer.classList.remove("opacity-0")
+
+    submitButton.classList.add("mt-4")
 
     messageSpan.innerText = "You are unauthenticated or your session has expired"
 }

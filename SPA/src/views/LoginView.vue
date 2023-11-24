@@ -23,7 +23,7 @@
                                 v-model="password" type="password" />
                         </div>
                         <div class="h-1/3  text-foreground text-center flex-col flex">
-                            <button ref="submitButton"
+                            <button ref="submitButton" id="submitButton"
                                 class="m-10 rounded-xl p-3 border-2 border-foreground hover:bg-accent focus:bg-accept transition-all duration-150"
                                 type="submit">Submit</button>
                             <div class="flex flex-col items-center space-y-2">
