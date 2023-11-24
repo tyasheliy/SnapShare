@@ -4,9 +4,9 @@ import router from './router'
 import './assets/tailwind.css'
 import axios from 'axios'
 
-const host = "192.168.0.100"
+const host = "176.214.93.42"
 const debugHost = "localhost"
 
-axios.defaults.baseURL = `http://${debugHost}/api/`
+axios.defaults.baseURL = `http://${host}/api/`
 
 createApp(App).use(router).mount('#app')

@@ -184,7 +184,7 @@ export default {
 
                     var link = `${location.origin}/get/${response.data.id}`
 
-                    if (file.files[0].size < 5 * 1024 * 1024) {
+                    if (file.files[0].size <= 5000000) {
                         let formData = new FormData()
                         formData.append("file", file.files[0])
 
@@ -194,6 +194,8 @@ export default {
                                 this.showAcceptedMessage("Your file has been successfully shared! It can be found at ", link)
                             })
                             .catch((error) => {
+                                this.processing = false
+
                                 if (error.response) {
                                     inputError(this.$refs.fileInput)
                                     this.showErrorMessage(error.response.data.message)
