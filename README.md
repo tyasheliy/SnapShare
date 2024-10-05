@@ -1,3 +1,5 @@
+this repository has moved to [gitlab](https://gitlab.com/tyasheliy/snap-share)
+
 # SnapShare
 
 Fullstack web application for fast file sharing.
